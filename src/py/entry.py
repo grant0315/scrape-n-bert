@@ -11,6 +11,8 @@ class EntryPoint:
     """ 
     This class is the main entry point for running scrape-n-bert in its various options.
     """
+    def __init__(self):
+        self.config = ""
 
     def scrape_and_run_bertopic_per_domain(self, path_to_config_file):
         """
