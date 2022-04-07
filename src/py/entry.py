@@ -124,8 +124,6 @@ class EntryPoint:
         """
         sections = config.sections()
 
-        print(sections)    
-
         # For each domain, run the run.sh file in order to scrape.
         for section in sections:
             if section != "General Settings":
