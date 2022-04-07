@@ -27,16 +27,17 @@ class EntryPoint:
             return -1
 
         # Initialize configuration file
-        config = configparser.ConfigParser()
+        self.config = configparser.ConfigParser()
+        self.config.read(path_to_config_file)
 
         # Get general settings from config file
-        output_file_directory = config['General Settings']['OUTPUT_FILE_DIRECTORY']
+        output_file_directory = self.config['General Settings']['OUTPUT_FILE_DIRECTORY']
 
         # Run scrapey spider over domains listed in config file
-        self.__config_scrape_loop(config.read(path_to_config_file, encoding="utf-8-sig"), output_file_directory)
+        self.__config_scrape_loop(self.config, output_file_directory)
 
         # Run bertopic over .jl files created
-        self.__bert_training_loop(config.read(path_to_config_file, encoding="utf-8-sig"), output_file_directory)
+        self.__bert_training_loop(self.config.read(path_to_config_file, encoding="utf-8-sig"), output_file_directory)
 
     def scrape_only(self, path_to_config_file):
         """
@@ -51,14 +52,14 @@ class EntryPoint:
             placeHolder
         """
         # Initialize configuration file
-        config = configparser.ConfigParser()
-        config.read(path_to_config_file, encoding="utf-8-sig")
+        self.config = configparser.ConfigParser()
+        self.config.read(path_to_config_file, encoding="utf-8-sig")
 
         # Get general settings from config file
-        output_file_directory = config['General Settings']['OUTPUT_FILE_DIRECTORY']
+        output_file_directory = self.config['General Settings']['OUTPUT_FILE_DIRECTORY']
 
         # Run scrapey spider over domains listed in config file
-        self.__config_scrape_loop(config, output_file_directory)
+        self.__config_scrape_loop(self.config, output_file_directory)
 
     def bertopic_only(self, input_file_path, output_directory, name):
         """
@@ -122,7 +123,7 @@ class EntryPoint:
         Raises: 
             placeHolder
         """
-        sections = config.sections()
+        sections = self.config.sections()
 
         # For each domain, run the run.sh file in order to scrape.
         for section in sections:
@@ -130,7 +131,7 @@ class EntryPoint:
                 section_file_name = self.__create_scrapy_content_file_name(str(section)) # Generate output filename
                 section_folder_path = self.__create_folder_for_domain(output_file_directory, self.__create_domain_folder_name(str(section))) # Create domain folder
                 
-                self.__run_scrape_shell_command(section_file_name, str(section), config[section]["CSS_SELECTORS"], config[section]["DEPTH_LIMIT"], config[section]["CLOSESPIDER_PAGECOUNT"])
+                self.__run_scrape_shell_command(section_file_name, str(section), self.config[section]["CSS_SELECTORS"], self.config[section]["DEPTH_LIMIT"], self.config[section]["CLOSESPIDER_PAGECOUNT"])
                 
                 # Move scraped data to scraped_data in output directory
                 scraped_data_path = "./recursive_spider/recursive_spider/" + section_file_name + "/" + section_folder_path
