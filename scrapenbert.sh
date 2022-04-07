@@ -25,11 +25,14 @@ done
 case "$TYPE" in
     "individual-snb") 
         echo "Running Scrape-n-bert in type: $TYPE\n"
-        
+        cd src/py
+        python3 entry.py individual-snb
         ;;
 
     "only-scrape")
         echo "Running Scrape-n-bert in type: $TYPE\n"
+        cd src/py
+        python3 entry.py only-scrape 
         ;;
 
     "only-bert")
