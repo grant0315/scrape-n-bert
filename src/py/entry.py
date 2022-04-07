@@ -134,7 +134,6 @@ class EntryPoint:
                 
                 # Move scraped data to scraped_data in output directory
                 scraped_data_path = "./recursive_spider/recursive_spider/" + section_file_name + "/" + section_folder_path
-                print(scraped_data_path)
                 os.replace("./recursive_spider/recursive_spider/" + section_file_name, section_folder_path)
 
     def __bert_training_loop(self, config, output_file_directory):
