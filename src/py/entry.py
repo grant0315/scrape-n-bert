@@ -1,4 +1,5 @@
 import configparser
+import shutil
 import bertopic_wrapper.main as bert
 import os
 import glob
@@ -6,42 +7,41 @@ import json
 import sys
 
 
-
 class EntryPoint:
     """ 
     This class is the main entry point for running scrape-n-bert in its various options.
     """
-    def __init__(self):
-        self.config = ""
+    def __init__(self, config_path=""):
+        # Check if config_path exists
+        if config_path == "":
+            print("[LOG]: Running without config file")
+        
+        elif self.__check_if_file_exists(config_path) != True:
+            print("[LOG]: Stopping scrape-n-bert")
+            return -1
+        
+        else:
+            self.config = configparser.ConfigParser()
+            self.config.read(config_path)
 
-    def scrape_and_run_bertopic_per_domain(self, path_to_config_file):
+    
+    # Currently working
+    def scrape_and_run_bertopic_per_domain(self):
         """
         This function uses scrapy to scrape desired data from a .ini (must be formatted correctly),
         and then feeds it into a bertopic instance to generate data for each individual domain provided.
         -----------------------------------------------------------------
-        Args:
-            path_to_config_file: path to config file (must be formatted correctly)
-            output_directory: path to output directory for bertopic topic and scrapey .jl files.
         """
-        # Check if config file exists
-        if self.__check_if_file_exists(path_to_config_file) != True:
-            print("[LOG]: Stopping scrape-n-bert")
-            return -1
-
-        # Initialize configuration file
-        self.config = configparser.ConfigParser()
-        self.config.read(path_to_config_file)
-
         # Get general settings from config file
         output_file_directory = self.config['General Settings']['OUTPUT_FILE_DIRECTORY']
 
         # Run scrapey spider over domains listed in config file
-        self.__config_scrape_loop(self.config, output_file_directory)
+        self.__config_scrape_loop(output_file_directory)
 
         # Run bertopic over .jl files created
-        self.__bert_training_loop(self.config.read(path_to_config_file, encoding="utf-8-sig"), output_file_directory)
+        self.__bert_training_loop(output_file_directory)
 
-    def scrape_only(self, path_to_config_file):
+    def scrape_only(self):
         """
         This function uses scrapy to scrape desired domains from a .ini (must be formatted correctly),
         and DOES NOT run the bertopic model on top.
@@ -63,7 +63,8 @@ class EntryPoint:
         # Run scrapey spider over domains listed in config file
         self.__config_scrape_loop(self.config, output_file_directory)
 
-    def bertopic_only(self, input_file_path, output_directory, name):
+    # Currently working
+    def bertopic_only(self, input_file_path, output_directory):
         """
         This function takes a desired directory of .jl files created from scrapy spider and,
         feed them into a bertopic instance, and returns bertopic topic files
@@ -75,13 +76,10 @@ class EntryPoint:
         Raises:
             placeHolder 
         """
+        scraped_data_name = os.path.basename(input_file_path).replace(".jl", "")
+        domain_folder_path = self.__create_folder_for_domain(output_directory, scraped_data_name)
 
-        domain_folder_path = self.__create_folder_for_domain(output_directory)
-
-        # This is using the domain folder function, to give a name to the output files for bertopic
-        output_filename = self.__create_domain_folder_name(name)
-
-        bt = bert.BertopicTraining(input_file_path, domain_folder_path, output_filename)
+        bt = bert.BertopicTraining(input_file_path, domain_folder_path, "bertopic_only")
         bt.trainModel()
 
     def compile_scrape_data_and_run_bertopic(self, input_data_directory, output_directory, output_filename):
@@ -113,13 +111,12 @@ class EntryPoint:
         with open(output_directory + "/" + output_filename + '_merged_file.jl', 'w', encoding='utf-8-sig') as outfile:
             outfile.write("\n".join(map(json.dumps, temp_result)))
 
-    def __config_scrape_loop(self, config, output_file_directory):
+    def __config_scrape_loop(self, output_file_directory):
         """
         This function scrapes every domain listed in a .ini file, 
         with the configuration provided.
         -----------------------------------------------------------------
         Args: 
-            config: The config file (.ini), which must be formatted correctly
             output_file_directory: the root directory that the data will be written to.
 
         Raises: 
@@ -130,41 +127,53 @@ class EntryPoint:
         # For each domain, run the run.sh file in order to scrape.
         for section in sections:
             if section != "General Settings":
+                print(str(section))
                 section_file_name = self.__create_scrapy_content_file_name(str(section)) # Generate output filename
-                section_folder_path = self.__create_folder_for_domain(output_file_directory, self.__create_domain_folder_name(str(section))) # Create domain folder
+                section_folder_name = self.__create_domain_folder_name(str(section))
+                scraped_data_folder_path = output_file_directory + "/" + section_folder_name + "/" + section_file_name
+
+                print(section_file_name)
+                print(section_folder_name)
+                print(scraped_data_folder_path)
                 
+                # Create domain name folder and scraped data sub-folder for specified domain
+                self.__create_folder_for_domain(output_file_directory, section_folder_name)
+
                 self.__run_scrape_shell_command(section_file_name, str(section), self.config[section]["CSS_SELECTORS"], self.config[section]["DEPTH_LIMIT"], self.config[section]["CLOSESPIDER_PAGECOUNT"])
                 
-                # Move scraped data to scraped_data in output directory
-                scraped_data_path = "./recursive_spider/recursive_spider/" + section_file_name + "/" + section_folder_path
-                os.replace("./recursive_spider/recursive_spider/" + section_file_name, section_folder_path)
+                # Get absolute path to created scrape data file and path to output_directory
+                data_file_abs_path = os.path.abspath("recursive_spider/" + section_file_name)
 
-    def __bert_training_loop(self, config, output_file_directory):
+                # Move scraped data to scraped_data in output directory
+                self.__move_file_to_folder(data_file_abs_path, scraped_data_folder_path)
+                # os.replace("./recursive_spider/recursive_spider/" + section_file_name, section_folder_path)
+
+    def __bert_training_loop(self, output_file_directory):
         """
         This function runs a bertopic instance from a .ini (must be formatted correctly),
         and then returns bertopic topic data.
         -----------------------------------------------------------------
         Args:
-            config: The config file (.ini), which must be formatted correctly
             output_file_directory: The root directory that the data will be written to.
         """
 
         # Pull data from config file
-        sections = config.sections()
+        sections = self.config.sections()
 
         # For each domain, run the run.sh file in order to scrape.
         for section in sections:
             if section != "General Settings":
-                self.__create_visualization_folder(output_file_directory) # Create visualization folder
-                self.__create_ml_data_folder(output_file_directory) # Create ML data folder
+                # Create ml_data and visualization folder
+                formatted_folder_name = self.__create_domain_folder_name(section)
+                self.__create_visualization_folder(output_file_directory + formatted_folder_name) # Create visualization folder
+                self.__create_ml_data_folder(output_file_directory + formatted_folder_name) # Create ML data folder
 
-                formatted_name = self.__create_scrapy_content_file_name(section)
-                
-                in_file_name = formatted_name + ".jl"
-                in_file_path = output_file_directory + "/" + formatted_name + "/" + in_file_name
+                # Determine path for the scraped data file
+                in_file_name = self.__create_scrapy_content_file_name(section)
+                in_file_path = output_file_directory + "/" + formatted_folder_name + "/" + in_file_name
 
-                out_file_name = formatted_name
-                out_directory_path = output_file_directory + "/" + formatted_name
+                out_file_name = "individual_domain"
+                out_directory_path = output_file_directory + "/" + formatted_folder_name
 
                 bt = bert.BertopicTraining(in_file_path, out_directory_path, out_file_name)
                 bt.trainModel()
@@ -226,7 +235,7 @@ class EntryPoint:
         """
 
         try:
-            full_path = root_folder_path + root_folder_name
+            full_path = root_folder_path + "/" + root_folder_name
             os.mkdir(full_path)
             return full_path
         except FileExistsError as e:
@@ -299,24 +308,43 @@ class EntryPoint:
             string: a folder/file name without a .jl extension for naming and finding purposes.
         """
         folder_name = domain.replace('.', '_').replace('/', '_')
-        return folder_name
+        return str(folder_name)
+
+    def __move_file_to_folder(self, in_file_path, out_file_path):
+        """
+        Moves one file to a specified folder.
+        ----------------------------------------------------------------
+        Args: 
+            in_file_path: Path to target file
+            dest_folder_path: Path to desired destination folder.
+        
+        Raise:
+
+        """
+        try:
+            shutil.move(in_file_path, out_file_path)
+        except ValueError as e:
+            print("[ERROR]: " + str(e))
 
 # Detect the arg passed from the main shell script, and run related EntryPoint function
 if __name__ == "__main__":
     cli_arg = sys.argv[1]
 
-    EntryPoint = EntryPoint()
     
     if cli_arg == "individual-snb":
         config_path = input("Full path to config: ")
-        EntryPoint.scrape_and_run_bertopic_per_domain(config_path)
+        EntryPoint = EntryPoint(config_path)
+        EntryPoint.scrape_and_run_bertopic_per_domain()
     
     elif cli_arg == "only-scrape":
         config_path = input("Full path to config: ")
         EntryPoint.scrape_only(config_path)
     
     elif cli_arg == "only-bert":
-        EntryPoint.bertopic_only()
+        EntryPoint = EntryPoint()
+        scraped_data_path = input(".jl file full path: ")
+        output_file_directory = input("Output folder full path: ")
+        EntryPoint.bertopic_only(scraped_data_path, output_file_directory)
     
     elif cli_arg == "combined_bert":
         EntryPoint.combined_bert()

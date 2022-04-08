@@ -41,50 +41,49 @@ class BertopicTraining():
 
     def write_training_data_to_disk(self, topic_model, topicInfo, allTopicInfo, repDoc, topicFrequency):
         try:
-            ml_data_path = self.out_directory_path + "/ml_data"
-            
+            ml_data_path = "/" + self.out_directory_path + "/ml_data"
+        
             try:
                 os.mkdir(ml_data_path)
-            
-                topic_info_dir = os.path.join(ml_data_path, self.out_filename + "_TOPIC_INFO" + ".txt")
-                all_topic_info_dir = os.path.join(ml_data_path, self.out_filename + "_ALL_TOPIC_INFO" + ".txt")
-                rep_doc_dir = os.path.join(ml_data_path, self.out_filename + "_REPERSENTITIVE_DOCS" + ".txt")
-                topic_frequency_dir = os.path.join(ml_data_path, self.out_filename + "_TOPIC_FREQUENCY" + ".txt")
-                topic_model_dir = os.path.join(ml_data_path, self.out_filename + "_TOPIC_MODEL" + ".bin")
+            except FileExistsError as e:
+                print("[WARNING]: ml_data folder already exists, writing to previous folder")
 
-                TIF = open(topic_info_dir, "w")
-                TIF.write(topicInfo.to_string())
-                TIF.close()
+            topic_info_dir = os.path.join(ml_data_path, self.out_filename + "_TOPIC_INFO" + ".csv")
+            all_topic_info_dir = os.path.join(ml_data_path, self.out_filename + "_ALL_TOPIC_INFO" + ".csv")
+            rep_doc_dir = os.path.join(ml_data_path, self.out_filename + "_REPERSENTITIVE_DOCS" + ".csv")
+            topic_frequency_dir = os.path.join(ml_data_path, self.out_filename + "_TOPIC_FREQUENCY" + ".csv")
+            topic_model_dir = os.path.join(ml_data_path, self.out_filename + "_TOPIC_MODEL" + ".bin")
 
-                AIF = open(all_topic_info_dir, "w")
-                AIF.write(str(allTopicInfo))
-                AIF.close()
+            TIF = open(topic_info_dir, "w")
+            TIF.write(topicInfo.to_string())
+            TIF.close()
 
-                RDF = open(rep_doc_dir, "w")
-                print(repDoc, file=RDF)
-                RDF.close()
+            AIF = open(all_topic_info_dir, "w")
+            AIF.write(str(allTopicInfo))
+            AIF.close()
 
-                TFF = open(topic_frequency_dir, "w")
-                TFF.write(topicFrequency.to_string())
-                TFF.close()
+            RDF = open(rep_doc_dir, "w")
+            print(repDoc, file=RDF)
+            RDF.close()
 
-                topic_model.save(topic_model_dir)
-        
-            except FileExistsError:
-                print("ml_data folder already exists, writing to previously created folder.")
+            TFF = open(topic_frequency_dir, "w")
+            TFF.write(topicFrequency.to_string())
+            TFF.close()
 
+            topic_model.save(topic_model_dir)
+    
         except ValueError as e: 
             print("Error: " + str(e))
             print("!=== This probably has to do with bertopic not being provided enough data ===!")
 
     def write_visualization_data_to_disk(self, topic_model):
         try:
-            path = self.out_directory_path + "/visualizations/"
+            path = "/" + self.out_directory_path + "/visualizations/"
 
             try:
                 os.mkdir(path)
             except FileExistsError:
-                print("Visualizations folder already exists, writing to previously created folder.")
+                print("[WARNING]: Visualizations folder already exists, writing to previously created folder.")
 
             vt = topic_model.visualize_topics()
             vt.write_html(path + "topics_visual.html")
