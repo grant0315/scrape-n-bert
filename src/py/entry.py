@@ -81,7 +81,8 @@ class EntryPoint:
 
         bt = bert.BertopicTraining(input_file_path, domain_folder_path, "bertopic_only")
         bt.trainModel()
-
+    
+    # Currently not working, almost finished de-bugging
     def compile_scrape_data_and_run_bertopic(self, input_data_directory, output_directory, output_filename):
         """
         This function compiles several .jl files from the input_data_path and then 
@@ -108,8 +109,12 @@ class EntryPoint:
                         print(file)
         
         # Write temp_result to combined .jl file at output_directory
-        with open(output_directory + "/" + output_filename + '_merged_file.jl', 'w', encoding='utf-8-sig') as outfile:
+        combined_file_path = output_directory + "/" + output_filename + '_merged_file.jl'
+        with open(combined_file_path, 'w', encoding='utf-8-sig') as outfile:
             outfile.write("\n".join(map(json.dumps, temp_result)))
+
+        bt = bert.BertopicTraining(combined_file_path, output_directory, "_bertopic_only")
+        bt.trainModel()
 
     def __config_scrape_loop(self, output_file_directory):
         """
@@ -346,5 +351,8 @@ if __name__ == "__main__":
         output_file_directory = input("Output folder full path: ")
         EntryPoint.bertopic_only(scraped_data_path, output_file_directory)
     
-    elif cli_arg == "combined_bert":
-        EntryPoint.combined_bert()
+    elif cli_arg == "combined-bert":
+        EntryPoint = EntryPoint()
+        combined_folder_path = input("Combined folder full path: ")
+        output_file_directory = input("Output folder full path: ")
+        EntryPoint.compile_scrape_data_and_run_bertopic(combined_folder_path, output_file_directory, "test")

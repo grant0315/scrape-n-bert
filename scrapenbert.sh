@@ -43,6 +43,8 @@ case "$TYPE" in
 
     "combined-bert")
         echo "Running Scrape-n-bert in type: $TYPE\n"
+        cd src/py
+        python3 entry.py combined-bert
         ;;
 
     *)
