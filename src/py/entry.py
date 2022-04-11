@@ -77,6 +77,18 @@ class EntryPoint:
         Raises:
             placeHolder 
         """
+        # Check input_file_path is real
+        try:
+            self.__check_if_file_exists(input_file_path)
+        except Exception as e:
+            print("[ERROR]: " + e)
+
+        # Check output_directory is real
+        try:
+            self.__check_if_directory_exists(output_directory)
+        except Exception as e:
+            print("[ERROR]: " + e)
+
         scraped_data_name = os.path.basename(input_file_path).replace(".jl", "")
         domain_folder_path = self.__create_folder_for_domain(output_directory, scraped_data_name)
 
@@ -98,6 +110,7 @@ class EntryPoint:
         """
         temp_result = []
         jl_path_list = self.__get_all_jl_files_in_directory(input_data_directory)
+        print(jl_path_list)
 
         # Read each file in return from __get_all_jl_files_in_directory
         # read each line in indexed file, and try appending them to temp_result
@@ -105,14 +118,17 @@ class EntryPoint:
             with open(file, 'r', encoding='utf-8-sig') as infile:
                 for line in infile.readlines():
                     try:
-                        temp_result.append(json.loads(line))
+                        temp_result.append(json.loads(line) + "\n")
                     except ValueError:
                         print(file)
         
         # Write temp_result to combined .jl file at output_directory
         combined_file_path = output_directory + "/" + output_filename + '_merged_file.jl'
+        print(combined_file_path)
         with open(combined_file_path, 'w', encoding='utf-8-sig') as outfile:
-            outfile.write("\n".join(map(json.dumps, temp_result)))
+            outfile.write("\n".join(map(json.dumps, temp_result)) + "\n")
+            outfile.close()
+            print("Combining file")
 
         bt = bert.BertopicTraining(combined_file_path, output_directory, "_bertopic_only")
         bt.trainModel()
@@ -209,6 +225,12 @@ class EntryPoint:
         else:
             raise ValueError("[ERROR]: Could not find given file -> " + path)
 
+    def __check_if_directory_exists(self, path):
+        if os.path.isdir(path):
+            return True
+        else:
+            raise ValueError("[ERROR]: Could not find given directory -> " + path)
+
     def __get_all_jl_files_in_directory(self, directory):
         """
         This is a function that returns a list of all .jl files in the given directory
@@ -220,7 +242,7 @@ class EntryPoint:
             ValueError: Could not find given directory
         """
         if os.path.isdir(directory):
-            target_pattern = directory + "/**/" + "*.jl"
+            target_pattern = directory + "/" + "*.jl"
             return glob.glob(target_pattern)
         else:
             raise ValueError("Could not find given directory")
@@ -276,7 +298,7 @@ class EntryPoint:
             String: full path to visualization folder
         """
         try:
-            dir_path = os.mkdir(directory + "/visualizations")
+            dir_path = os.mkdir("/" + directory + "/visualizations")
             return dir_path
         except FileExistsError as e:
             print("!=== Domain visualization folder already exists ===!")
