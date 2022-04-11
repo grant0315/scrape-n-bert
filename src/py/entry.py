@@ -41,6 +41,7 @@ class EntryPoint:
         # Run bertopic over .jl files created
         self.__bert_training_loop(output_file_directory)
 
+    # --- WIP ---
     def scrape_only(self):
         """
         This function uses scrapy to scrape desired domains from a .ini (must be formatted correctly),
@@ -82,7 +83,7 @@ class EntryPoint:
         bt = bert.BertopicTraining(input_file_path, domain_folder_path, "bertopic_only")
         bt.trainModel()
     
-    # Currently not working, almost finished de-bugging
+    # --- WIP ----
     def compile_scrape_data_and_run_bertopic(self, input_data_directory, output_directory, output_filename):
         """
         This function compiles several .jl files from the input_data_path and then 
