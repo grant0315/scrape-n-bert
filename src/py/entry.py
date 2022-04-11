@@ -54,18 +54,15 @@ class EntryPoint:
         Raises:
             placeHolder
         """
-        # Initialize configuration file
-        self.config = configparser.ConfigParser()
-        self.config.read(path_to_config_file, encoding="utf-8-sig")
 
         # Get general settings from config file
         output_file_directory = self.config['General Settings']['OUTPUT_FILE_DIRECTORY']
 
         # Run scrapey spider over domains listed in config file
-        self.__config_scrape_loop(self.config, output_file_directory)
+        self.__config_scrape_loop(output_file_directory)
 
     # Currently working
-    def bertopic_only(self, input_file_path, output_directory):
+    def bertopic_only(self, input_file_path, output_directory, search_term):
         """
         This function takes a desired directory of .jl files created from scrapy spider and,
         feed them into a bertopic instance, and returns bertopic topic files
@@ -91,8 +88,9 @@ class EntryPoint:
 
         scraped_data_name = os.path.basename(input_file_path).replace(".jl", "")
         domain_folder_path = self.__create_folder_for_domain(output_directory, scraped_data_name)
+        print(domain_folder_path)
 
-        bt = bert.BertopicTraining(input_file_path, domain_folder_path, "bertopic_only")
+        bt = bert.BertopicTraining(input_file_path, domain_folder_path, "bertopic_only", search_term)
         bt.trainModel()
     
     # --- WIP ----
@@ -180,6 +178,7 @@ class EntryPoint:
         """
 
         # Pull data from config file
+        search_term_from_config = self.config['General Settings']['BERT_SEARCH_TERM']
         sections = self.config.sections()
 
         # For each domain, run the run.sh file in order to scrape.
@@ -197,7 +196,7 @@ class EntryPoint:
                 out_file_name = "individual_domain"
                 out_directory_path = output_file_directory + "/" + formatted_folder_name
 
-                bt = bert.BertopicTraining(in_file_path, out_directory_path, out_file_name)
+                bt = bert.BertopicTraining(in_file_path, out_directory_path, out_file_name, search_term_from_config)
                 bt.trainModel()
 
     def __run_scrape_shell_command(self, output_file_name, domain, css_selector, depth_limit, close_spider_page_count):
@@ -366,13 +365,15 @@ if __name__ == "__main__":
     
     elif cli_arg == "only-scrape":
         config_path = input("Full path to config: ")
+        EntryPoint = EntryPoint(config_path)
         EntryPoint.scrape_only(config_path)
     
     elif cli_arg == "only-bert":
         EntryPoint = EntryPoint()
         scraped_data_path = input(".jl file full path: ")
         output_file_directory = input("Output folder full path: ")
-        EntryPoint.bertopic_only(scraped_data_path, output_file_directory)
+        search_term = input("Specify search term: ")
+        EntryPoint.bertopic_only(scraped_data_path, output_file_directory, search_term)
     
     elif cli_arg == "combined-bert":
         EntryPoint = EntryPoint()
