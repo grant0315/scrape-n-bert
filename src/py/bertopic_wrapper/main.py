@@ -13,7 +13,7 @@ class BertopicTraining():
         
         # Create data frame and store as object
         # df = pd.read_csv(out_dir + "/" + out_file + ".csv")
-        df = pd.read_json(os.path.abspath(absolute_in_file_path), lines=True)
+        df = pd.read_json(os.path.abspath(absolute_in_file_path), lines=True, encoding="utf-8-sig")
         self.data = df["content"]
 
         print(self.data)

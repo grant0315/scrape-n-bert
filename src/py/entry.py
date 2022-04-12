@@ -106,17 +106,28 @@ class EntryPoint:
         Raises: 
             placeHolder
         """
-        temp_result = []
+        result = []
         jl_path_list = self.__get_all_jl_files_in_directory(input_data_directory)
         print(jl_path_list)
 
+        combined_file_path = output_directory + "/" + output_filename + '_merged_file.jl'
+        print(combined_file_path)
+
+        outfile = open(combined_file_path, "w", encoding="utf-8-sig")
+        for f in jl_path_list:
+            with open(f, 'r', encoding='utf-8-sig') as infile:
+                for line in infile.readlines():
+                    outfile.write(line)
+        outfile.close()
+
         # Read each file in return from __get_all_jl_files_in_directory
         # read each line in indexed file, and try appending them to temp_result
+        """
         for file in jl_path_list:
             with open(file, 'r', encoding='utf-8-sig') as infile:
                 for line in infile.readlines():
                     try:
-                        temp_result.append(json.loads(line) + "\n")
+                        result.append(json.loads(line))
                     except ValueError:
                         print(file)
         
@@ -124,11 +135,12 @@ class EntryPoint:
         combined_file_path = output_directory + "/" + output_filename + '_merged_file.jl'
         print(combined_file_path)
         with open(combined_file_path, 'w', encoding='utf-8-sig') as outfile:
-            outfile.write("\n".join(map(json.dumps, temp_result)) + "\n")
+            outfile.write("\n".join(map(json.dumps, result)) + "\n")
             outfile.close()
             print("Combining file")
+        """
 
-        bt = bert.BertopicTraining(combined_file_path, output_directory, "_bertopic_only")
+        bt = bert.BertopicTraining("/home/granthopkins/workspace/scrape-n-bert-v4/data/test_merged_file.jl", output_directory, "merged_data", "")
         bt.trainModel()
 
     def __config_scrape_loop(self, output_file_directory):
