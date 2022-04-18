@@ -138,3 +138,6 @@ class BertopicTraining():
 
         df = pd.DataFrame(data=topics_by_topic_number, index=topic_name)
         df.to_csv(out_filename)
+
+    def get_rep_docs(self):
+        return self.topic_model.get_representative_docs()

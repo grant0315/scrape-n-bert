@@ -1,6 +1,7 @@
 import configparser
 import shutil
 import bertopic_wrapper.main as bert
+import keybert_wrapper.main as kb
 import os
 import glob
 import json
@@ -92,6 +93,7 @@ class EntryPoint:
 
         bt = bert.BertopicTraining(input_file_path, domain_folder_path, "bertopic_only", search_term)
         bt.trainModel()
+        self.__keybert_from_bertopic_rep_docs(bt.get_rep_docs())
     
     # --- WIP ----
     def compile_scrape_data_and_run_bertopic(self, input_data_directory, output_directory, output_filename):
@@ -142,6 +144,12 @@ class EntryPoint:
 
         bt = bert.BertopicTraining("/home/granthopkins/workspace/scrape-n-bert-v4/data/test_merged_file.jl", output_directory, "merged_data", "")
         bt.trainModel()
+
+    def __keybert_from_bertopic_rep_docs(self, rep_docs):
+        kw = kb.KeybertWrapper(rep_docs)
+        keywords = kw.find_keywords()
+        print(keywords)
+        return keywords
 
     def __config_scrape_loop(self, output_file_directory):
         """
@@ -378,7 +386,7 @@ if __name__ == "__main__":
     elif cli_arg == "only-scrape":
         config_path = input("Full path to config: ")
         EntryPoint = EntryPoint(config_path)
-        EntryPoint.scrape_only(config_path)
+        EntryPoint.scrape_only()
     
     elif cli_arg == "only-bert":
         EntryPoint = EntryPoint()
