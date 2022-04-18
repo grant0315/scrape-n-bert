@@ -9,7 +9,7 @@ helpFunction()
     echo "  Optional -t [only-scrape] Runs spider on domains in config file"
     echo "  Optional -t [only-bert] Runs bertopic instance on each domain in config file without scraping"
     echo "  Optional -t [combined-bert] Combines multiple scraped data files, and runs bertopic on top of the large file"
-    echo
+    echo "  Optional -t [only-keybert] Run KeyBERT to generate keywords based on any content without scraping or using BERTopic"
 }
 
 while getopts "t:" opt
@@ -45,6 +45,12 @@ case "$TYPE" in
         echo "Running Scrape-n-bert in type: $TYPE\n"
         cd src/py
         python3 entry.py combined-bert
+        ;;
+
+    "only-keybert")
+        echo "Running Scrape-n-bert in type: $TYPE\n"
+        cd src/py
+        python3 entry.py only-keybert
         ;;
 
     *)

@@ -6,6 +6,8 @@ import os
 import glob
 import json
 import sys
+import pandas as pd
+import ast
 
 
 class EntryPoint:
@@ -94,7 +96,22 @@ class EntryPoint:
         bt = bert.BertopicTraining(input_file_path, domain_folder_path, "bertopic_only", search_term)
         bt.trainModel()
         self.__keybert_from_bertopic_rep_docs(bt.get_rep_docs())
-    
+
+    def keybert_only(self, input_file_path, output_directory, name_of_file):
+        keywords = []
+        complete_output_path = os.path.join(output_directory, name_of_file)
+        with open(input_file_path) as f:
+            contents = f.read()
+        content_dict = ast.literal_eval(contents)
+        print(content_dict.items())
+
+        for key, value in content_dict.items():
+            keywords.append(str(key) + ": " + str(self.__keybert_from_bertopic_rep_docs(value)))
+
+        output = open(complete_output_path + ".txt", "a+")
+        output.write(str(keywords))
+        output.close()
+
     # --- WIP ----
     def compile_scrape_data_and_run_bertopic(self, input_data_directory, output_directory, output_filename):
         """
@@ -400,3 +417,10 @@ if __name__ == "__main__":
         combined_folder_path = input("Combined folder full path: ")
         output_file_directory = input("Output folder full path: ")
         EntryPoint.compile_scrape_data_and_run_bertopic(combined_folder_path, output_file_directory, "test")
+
+    elif cli_arg == "only-keybert":
+        EntryPoint = EntryPoint()
+        input_file_path = input("Enter full file path for keyword extraction: ")
+        output_directory = input("Enter full file path where you would like the extracted keywords to be saved: ")
+        name_of_file = input("Enter what you'd like to name your file: ")
+        EntryPoint.keybert_only(input_file_path, output_directory, name_of_file)
