@@ -44,6 +44,9 @@ class EntryPoint:
         # Run bertopic over .jl files created
         self.__bert_training_loop(output_file_directory)
 
+        #Pull BERTopic representative documents and iterate through them with KeyBERT
+        self.__keybert_loop(output_file_directory)
+
     # --- WIP ---
     def scrape_only(self):
         """
@@ -95,18 +98,21 @@ class EntryPoint:
 
         bt = bert.BertopicTraining(input_file_path, domain_folder_path, "bertopic_only", search_term)
         bt.trainModel()
-        self.__keybert_from_bertopic_rep_docs(bt.get_rep_docs())
-
+        
     def keybert_only(self, input_file_path, output_directory, name_of_file):
+        kw = kb.KeybertWrapper(input_file_path)
         keywords = []
         complete_output_path = os.path.join(output_directory, name_of_file)
         with open(input_file_path) as f:
             contents = f.read()
-        content_dict = ast.literal_eval(contents)
-        print(content_dict.items())
-
-        for key, value in content_dict.items():
-            keywords.append(str(key) + ": " + str(self.__keybert_from_bertopic_rep_docs(value)))
+        content_dict_or_other = ast.literal_eval(contents)
+        if type(content_dict_or_other) == "dict":
+            content_dict = content_dict_or_other
+            for key, value in content_dict.items():
+                keywords.append(str(key) + ": " + str(kw.run_keybert(value)))
+        else:
+            other_content = content_dict_or_other
+            keywords = kw.run_keybert(str(other_content))
 
         output = open(complete_output_path + ".txt", "a+")
         output.write(str(keywords))
@@ -162,11 +168,13 @@ class EntryPoint:
         bt = bert.BertopicTraining("/home/granthopkins/workspace/scrape-n-bert-v4/data/test_merged_file.jl", output_directory, "merged_data", "")
         bt.trainModel()
 
-    def __keybert_from_bertopic_rep_docs(self, rep_docs):
+    def __keybert_loop(self, output_file_directory):
+        rep_docs = self.bt.get_rep_docs()
+
         kw = kb.KeybertWrapper(rep_docs)
         keywords = kw.find_keywords()
-        print(keywords)
-        return keywords
+
+        kw.write_keywords_to_disk(keywords, output_file_directory)
 
     def __config_scrape_loop(self, output_file_directory):
         """
@@ -223,18 +231,18 @@ class EntryPoint:
             if section != "General Settings":
                 # Create ml_data and visualization folder
                 formatted_folder_name = self.__create_domain_folder_name(section)
-                self.__create_visualization_folder(output_file_directory + formatted_folder_name) # Create visualization folder
-                self.__create_ml_data_folder(output_file_directory + formatted_folder_name) # Create ML data folder
+                self.__create_visualization_folder(output_file_directory + "/" + formatted_folder_name) # Create visualization folder
+                self.__create_ml_data_folder(output_file_directory + "/" + formatted_folder_name) # Create ML data folder
 
                 # Determine path for the scraped data file
                 in_file_name = self.__create_scrapy_content_file_name(section)
                 in_file_path = output_file_directory + "/" + formatted_folder_name + "/" + in_file_name
 
-                out_file_name = "individual_domain"
-                out_directory_path = output_file_directory + "/" + formatted_folder_name
+                self.out_file_name = "individual_domain"
+                self.out_directory_path = output_file_directory + "/" + formatted_folder_name
 
-                bt = bert.BertopicTraining(in_file_path, out_directory_path, out_file_name, search_term_from_config)
-                bt.trainModel()
+                self.bt = bert.BertopicTraining(in_file_path, self.out_directory_path, self.out_file_name, search_term_from_config)
+                self.bt.trainModel()
 
     def __run_scrape_shell_command(self, output_file_name, domain, css_selector, depth_limit, close_spider_page_count):
         """
@@ -299,12 +307,12 @@ class EntryPoint:
         """
 
         try:
-            full_path = root_folder_path + "/" + root_folder_name
+            full_path = root_folder_path + root_folder_name
             os.mkdir(full_path)
             return full_path
         except FileExistsError as e:
             print("!=== Root folder already exists ===!") 
-            pass
+            return full_path
 
     def __create_ml_data_folder(self, directory):
         """
@@ -334,7 +342,7 @@ class EntryPoint:
             String: full path to visualization folder
         """
         try:
-            dir_path = os.mkdir("/" + directory + "/visualizations")
+            dir_path = os.mkdir(directory + "/visualizations")
             return dir_path
         except FileExistsError as e:
             print("!=== Domain visualization folder already exists ===!")

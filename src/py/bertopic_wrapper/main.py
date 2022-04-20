@@ -92,7 +92,7 @@ class BertopicTraining():
 
     def write_visualization_data_to_disk(self, topic_model):
         try:
-            path = "/" + self.out_directory_path + "/visualizations/"
+            path = self.out_directory_path + "/visualizations/"
 
             try:
                 os.mkdir(path)
