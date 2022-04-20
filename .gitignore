@@ -132,3 +132,6 @@ dmypy.json
 configs
 data
 venv
+
+# Data files
+learn_g2_com
