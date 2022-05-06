@@ -145,26 +145,6 @@ class EntryPoint:
                     outfile.write(line)
         outfile.close()
 
-        # Read each file in return from __get_all_jl_files_in_directory
-        # read each line in indexed file, and try appending them to temp_result
-        """
-        for file in jl_path_list:
-            with open(file, 'r', encoding='utf-8-sig') as infile:
-                for line in infile.readlines():
-                    try:
-                        result.append(json.loads(line))
-                    except ValueError:
-                        print(file)
-        
-        # Write temp_result to combined .jl file at output_directory
-        combined_file_path = output_directory + "/" + output_filename + '_merged_file.jl'
-        print(combined_file_path)
-        with open(combined_file_path, 'w', encoding='utf-8-sig') as outfile:
-            outfile.write("\n".join(map(json.dumps, result)) + "\n")
-            outfile.close()
-            print("Combining file")
-        """
-
         bt = bert.BertopicTraining("/home/granthopkins/workspace/scrape-n-bert-v4/data/test_merged_file.jl", output_directory, "merged_data", "")
         bt.trainModel()
 
